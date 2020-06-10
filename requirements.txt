@@ -1,5 +1,5 @@
 transformers==2.1.1
-torch==1.2.0
+torch
 penman==0.6.2
 networkx
 # Data preprocessing
@@ -15,3 +15,5 @@ editdistance
 word2number
 bs4
 lxml
+pytorch-pretrained-bert
+pycorenlp
