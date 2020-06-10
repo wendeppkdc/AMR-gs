@@ -1,12 +1,11 @@
 import re
-
-from pycorenlp import StanfordCoreNLP
-
+import stanza
+from stanza.server import CoreNLPClient
 from stog.utils import logging
-
+import os
+import time
 
 logger = logging.init_logger()
-
 
 class FeatureAnnotator:
 
@@ -15,7 +14,7 @@ class FeatureAnnotator:
     DashedNumbers = re.compile(r'-*\d+-\d+')
 
     def __init__(self, url, compound_map_file):
-        self.nlp = StanfordCoreNLP(url)
+
         self.nlp_properties = {
             'annotators': "tokenize,ssplit,pos,lemma,ner",
             "tokenize.options": "splitHyphenated=true,normalizeParentheses=false",
@@ -23,12 +22,19 @@ class FeatureAnnotator:
             'ssplit.isOneSentence': True,
             'outputFormat': 'json'
         }
+
+        os.environ["CORENLP_HOME"] = "/content/stanford-corenlp-full-2018-10-05"
+        client = CoreNLPClient(annotators=['tokenize','ssplit', 'pos', 'lemma', 'ner'], properties=self.nlp_properties, memory='10G', endpoint=url)
+        client.start()
+        print(client)
+        time.sleep(10)
+        self.nlp = client
+        
         self.compound_map = self.load_compound_map(compound_map_file)
 
     @staticmethod
     def load_compound_map(file_path):
         """Load a compound map from partial compound word to a list of possible next token in the compound.
-
         :param file_path: the compound map file.
         "https://github.com/ChunchuanLv/AMR_AS_GRAPH_PREDICTION/blob/master/data/joints.txt"
         :return: a dict from string to list.
@@ -60,7 +66,7 @@ class FeatureAnnotator:
                 len(tokens), len(value), '\n', list(zip(tokens, value)), tokens, value)
 
     def annotate(self, text):
-        tokens = self.nlp.annotate(text.strip(), self.nlp_properties)['sentences'][0]['tokens']
+        tokens = self.nlp.annotate(text.strip())['sentences'][0]['tokens']
         output = dict(
             tokens=[], lemmas=[], pos_tags=[], ner_tags=[]
         )
@@ -194,7 +200,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    annotator = FeatureAnnotator('http://localhost:9000', args.compound_file)
+    annotator = FeatureAnnotator('http://localhost:2020', args.compound_file)
 
     for file_path in args.files:
         logger.info('Processing {}'.format(file_path))
