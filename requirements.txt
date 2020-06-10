@@ -17,3 +17,4 @@ bs4
 lxml
 pytorch-pretrained-bert
 pycorenlp
+stanza
